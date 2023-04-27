@@ -202,9 +202,10 @@ class KiSymbolInfo:
                 )
             )
         if self.lcsc_id:
-            header.append(f'F6 "{self.lcsc_id}" 0 0 0 H I C CNN "LCSC Part"')
+            header.append(f'F6 "{self.lcsc_id}" 0 0 0 H I C CNN "LCSC"')
         if self.jlc_id:
             header.append(f'F7 "{self.jlc_id}" 0 0 0 H I C CNN "JLC Part"')
+            header.append(f'F8 "0;0;0" 0 0 0 H I C CNN "JLCPCB_CORRECTION"')
 
         header.append("DRAW\n")
 
@@ -289,7 +290,7 @@ class KiSymbolInfo:
             field_offset_y += KiExportConfigV6.FIELD_OFFSET_INCREMENT.value
             header.append(
                 property_template.format(
-                    key="LCSC Part",
+                    key="LCSC",
                     value=self.lcsc_id,
                     id_=5,
                     pos_y=self.y_low - field_offset_y,
@@ -312,6 +313,19 @@ class KiSymbolInfo:
                 )
             )
 
+        if self.jlc_id:
+            field_offset_y += KiExportConfigV6.FIELD_OFFSET_INCREMENT.value
+            header.append(
+                property_template.format(
+                    key="JLCPCB_CORRECTION",
+                    value="0;0;0",
+                    id_=7,
+                    pos_y=self.y_low - field_offset_y,
+                    font_size=KiExportConfigV6.PROPERTY_FONT_SIZE.value,
+                    style="",
+                    hide="hide",
+                )
+            )
         return header
 
 
