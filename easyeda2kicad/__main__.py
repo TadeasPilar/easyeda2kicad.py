@@ -104,6 +104,14 @@ def get_parser() -> argparse.ArgumentParser:
         action="store_true",
     )
 
+    parser.add_argument(
+        "--jlc-smt-link",
+        help="Link datasheet field to JLC SMT parts library instead of LCSC",
+        required=False,
+        default=False,
+        action="store_true",
+    )
+
     return parser
 
 
@@ -244,6 +252,7 @@ def main(argv: List[str] = sys.argv[1:]) -> int:
     component_id = arguments["lcsc_id"]
     kicad_version = arguments["kicad_version"]
     sym_lib_ext = "kicad_sym" if kicad_version == KicadVersion.v6 else "lib"
+    datasheet_link = "jlc_smt" if arguments["jlc_smt_link"] else "lcsc"
 
     # Get CAD data of the component using easyeda API
     api = EasyedaApi()
@@ -271,7 +280,7 @@ def main(argv: List[str] = sys.argv[1:]) -> int:
             return 1
 
         exporter = ExporterSymbolKicad(
-            symbol=easyeda_symbol, kicad_version=kicad_version
+            symbol=easyeda_symbol, kicad_version=kicad_version, datasheet=datasheet_link
         )
         # print(exporter.output)
         kicad_symbol_lib = exporter.export(

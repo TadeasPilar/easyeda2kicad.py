@@ -296,14 +296,18 @@ def convert_ee_paths(
     return kicad_polygons, kicad_beziers
 
 
-def convert_to_kicad(ee_symbol: EeSymbol, kicad_version: KicadVersion) -> KiSymbol:
+def convert_to_kicad(
+    ee_symbol: EeSymbol, kicad_version: KicadVersion, datasheet
+) -> KiSymbol:
 
     ki_info = KiSymbolInfo(
         name=ee_symbol.info.name,
         prefix=ee_symbol.info.prefix.replace("?", ""),
         package=ee_symbol.info.package,
         manufacturer=ee_symbol.info.manufacturer,
-        datasheet=ee_symbol.info.datasheet,
+        datasheet=ee_symbol.info.datasheet
+        if datasheet == "lcsc"
+        else f"https://jlcpcb.com/partdetail/{ee_symbol.info.lcsc_id}",
         lcsc_id=ee_symbol.info.lcsc_id,
         jlc_id=ee_symbol.info.jlc_id,
     )
@@ -355,11 +359,13 @@ def tune_footprint_ref_path(ki_symbol: KiSymbol, footprint_lib_name: str):
 
 
 class ExporterSymbolKicad:
-    def __init__(self, symbol, kicad_version: KicadVersion):
+    def __init__(self, symbol, kicad_version: KicadVersion, datasheet):
         self.input: EeSymbol = symbol
         self.version = kicad_version
         self.output = (
-            convert_to_kicad(ee_symbol=self.input, kicad_version=kicad_version)
+            convert_to_kicad(
+                ee_symbol=self.input, kicad_version=kicad_version, datasheet=datasheet
+            )
             if isinstance(self.input, EeSymbol)
             else logging.error("Unknown input symbol format")
         )
