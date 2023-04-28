@@ -37,7 +37,7 @@ def get_parser() -> argparse.ArgumentParser:
         )
     )
 
-    parser.add_argument("--lcsc_id", help="LCSC id", required=True, type=str)
+    parser.add_argument("--lcsc_id", help="LCSC id", required=False, type=str)
 
     parser.add_argument(
         "--symbol", help="Get symbol of this id", required=False, action="store_true"
@@ -97,6 +97,17 @@ def get_parser() -> argparse.ArgumentParser:
     )
 
     parser.add_argument(
+        "--project-absolute",
+        help=(
+            r"Sets the 3D file path relative to library output name variable. For"
+            r" example setting --output-name to something/lcsc.kicad_sym will set 3D"
+            r" model path to \{lcsc\}/lcsc.3dshapes/model_name.wrl "
+        ),
+        default=False,
+        action="store_true",
+    )
+
+    parser.add_argument(
         "--debug",
         help="set the logging level to debug",
         required=False,
@@ -110,6 +121,14 @@ def get_parser() -> argparse.ArgumentParser:
         required=False,
         default=False,
         action="store_true",
+    )
+
+    parser.add_argument(
+        "--lcsc-list",
+        nargs="+",
+        help="List of space separated LCSC IDs to download.",
+        required=False,
+        default=False,
     )
 
     return parser
@@ -244,10 +263,28 @@ def main(argv: List[str] = sys.argv[1:]) -> int:
     else:
         set_logger(log_file=None, log_level=logging.INFO)
 
+    # conf = get_local_config()
+
+    if arguments["lcsc_list"]:
+        ids = arguments["lcsc_list"]
+        logging.info(f"Procesing lcsc ids: {ids}")
+        for i, lcsc_id in enumerate(ids):
+            arguments["lcsc_id"] = lcsc_id
+            single_run(arguments)
+            logging.info(
+                "_____________\n"
+                f"       Progress {((i+1)/len(ids))*100:.0f}%\n"
+                "       ‾‾‾‾‾‾‾‾‾‾‾‾‾"
+            )
+
+    else:
+        single_run(arguments)
+
+
+def single_run(arguments):
+
     if not valid_arguments(arguments=arguments):
         return 1
-
-    # conf = get_local_config()
 
     component_id = arguments["lcsc_id"]
     kicad_version = arguments["kicad_version"]
@@ -331,6 +368,13 @@ def main(argv: List[str] = sys.argv[1:]) -> int:
             model_3d_path = "${EASYEDA2KICAD}/easyeda2kicad.3dshapes"
         if arguments["project_relative"]:
             model_3d_path = "${KIPRJMOD}" + model_3d_path
+        elif arguments["project_absolute"]:
+            foo = arguments["output"].split("/")[-1].upper()
+            model_3d_path = (
+                f"${{KIPRJMOD}}/${{{foo}}}/{model_3d_path.split('/')[-1]}".replace(
+                    "\\", "/"
+                ).replace("./", "/")
+            )
 
         ki_footprint.export(
             footprint_full_path=f"{footprint_path}/{footprint_filename}",
