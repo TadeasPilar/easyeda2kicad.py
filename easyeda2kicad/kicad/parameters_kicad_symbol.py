@@ -142,6 +142,8 @@ class KiSymbolInfo:
     jlc_id: str
     y_low: Union[int, float] = 0
     y_high: Union[int, float] = 0
+    jlc_smt_link: str = ""
+    lcsc_link: str = ""
 
     def export_v5(self) -> str:
         field_offset_y = KiExportConfigV5.FIELD_OFFSET_START.value
@@ -195,9 +197,33 @@ class KiSymbolInfo:
                     font_size=KiExportConfigV5.FIELD_FONT_SIZE.value,
                 )
             )
+        if self.jlc_smt_link:
+            field_offset_y += KiExportConfigV5.FIELD_OFFSET_INCREMENT.value
+            header.append(
+                'F4 "{jlc_smt_link}" {x} {y} {font_size} H I {text_justification} CNN'
+                .format(
+                    jlc_smt_link=self.jlc_smt_link,
+                    x=0,
+                    y=self.y_low - field_offset_y,
+                    text_justification="C",  # Center align
+                    font_size=KiExportConfigV5.FIELD_FONT_SIZE.value,
+                )
+            )
+        if self.lcsc_link:
+            field_offset_y += KiExportConfigV5.FIELD_OFFSET_INCREMENT.value
+            header.append(
+                'F4 "{lcsc_link}" {x} {y} {font_size} H I {text_justification} CNN'
+                .format(
+                    lcsc_link=self.lcsc_link,
+                    x=0,
+                    y=self.y_low - field_offset_y,
+                    text_justification="C",  # Center align
+                    font_size=KiExportConfigV5.FIELD_FONT_SIZE.value,
+                )
+            )
         if self.manufacturer:
             header.append(
-                'F4 "{manufacturer}" 0 0 0 H I C CNN "Manufacturer"'.format(
+                'F5 "{manufacturer}" 0 0 0 H I C CNN "Manufacturer"'.format(
                     manufacturer=self.manufacturer,
                 )
             )
@@ -266,6 +292,32 @@ class KiSymbolInfo:
                 property_template.format(
                     key="Datasheet",
                     value=self.datasheet,
+                    id_=3,
+                    pos_y=self.y_low - field_offset_y,
+                    font_size=KiExportConfigV6.PROPERTY_FONT_SIZE.value,
+                    style="",
+                    hide="hide",
+                )
+            )
+        if self.jlc_smt_link:
+            field_offset_y += KiExportConfigV6.FIELD_OFFSET_INCREMENT.value
+            header.append(
+                property_template.format(
+                    key="JLC SMT",
+                    value=self.jlc_smt_link,
+                    id_=3,
+                    pos_y=self.y_low - field_offset_y,
+                    font_size=KiExportConfigV6.PROPERTY_FONT_SIZE.value,
+                    style="",
+                    hide="hide",
+                )
+            )
+        if self.lcsc_link:
+            field_offset_y += KiExportConfigV6.FIELD_OFFSET_INCREMENT.value
+            header.append(
+                property_template.format(
+                    key="LCSC",
+                    value=self.lcsc_link,
                     id_=3,
                     pos_y=self.y_low - field_offset_y,
                     font_size=KiExportConfigV6.PROPERTY_FONT_SIZE.value,
@@ -667,7 +719,7 @@ class KiSymbol:
             ),
             "  ",
         ).format(
-            library_id=sanitize_fields(self.info.name),
+            library_id=self.info.lcsc_id + " - " + sanitize_fields(self.info.name),
             symbol_properties=textwrap.indent(
                 textwrap.dedent("".join(sym_info)), "  " * 2
             ),

@@ -297,17 +297,29 @@ def convert_ee_paths(
 
 
 def convert_to_kicad(
-    ee_symbol: EeSymbol, kicad_version: KicadVersion, datasheet
+    ee_symbol: EeSymbol, kicad_version: KicadVersion, datasheet_link
 ) -> KiSymbol:
+
+    # Use LCSC as datasheet link and JLC SMT as secondary link
+    if datasheet_link == "lcsc":
+        jlc_smt_link = f"https://jlcpcb.com/partdetail/{ee_symbol.info.lcsc_id}"
+        datasheet_link = ee_symbol.info.datasheet
+        lcsc_link = ""
+
+    # Use JLC SMT as datasheet link and LCSC as secondary link
+    else:
+        lcsc_link = ee_symbol.info.datasheet
+        datasheet_link = f"https://jlcpcb.com/partdetail/{ee_symbol.info.lcsc_id}"
+        jlc_smt_link = ""
 
     ki_info = KiSymbolInfo(
         name=ee_symbol.info.name,
         prefix=ee_symbol.info.prefix.replace("?", ""),
         package=ee_symbol.info.package,
         manufacturer=ee_symbol.info.manufacturer,
-        datasheet=ee_symbol.info.datasheet
-        if datasheet == "lcsc"
-        else f"https://jlcpcb.com/partdetail/{ee_symbol.info.lcsc_id}",
+        datasheet=datasheet_link,
+        lcsc_link=lcsc_link,
+        jlc_smt_link=jlc_smt_link,
         lcsc_id=ee_symbol.info.lcsc_id,
         jlc_id=ee_symbol.info.jlc_id,
     )
@@ -364,7 +376,9 @@ class ExporterSymbolKicad:
         self.version = kicad_version
         self.output = (
             convert_to_kicad(
-                ee_symbol=self.input, kicad_version=kicad_version, datasheet=datasheet
+                ee_symbol=self.input,
+                kicad_version=kicad_version,
+                datasheet_link=datasheet,
             )
             if isinstance(self.input, EeSymbol)
             else logging.error("Unknown input symbol format")

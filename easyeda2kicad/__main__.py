@@ -131,6 +131,19 @@ def get_parser() -> argparse.ArgumentParser:
         default=False,
     )
 
+    parser.add_argument(
+        "--parts-list",
+        help=(
+            "Add part to the list of parts in parts_list.txt. Create this list if"
+            " nonexistant. Also sort this list and remove duplicit part entries. This"
+            " list can be used together with --lcsc-list and --overwrite to re-download"
+            " all parts."
+        ),
+        required=False,
+        default=False,
+        action="store_true",
+    )
+
     return parser
 
 
@@ -264,13 +277,15 @@ def main(argv: List[str] = sys.argv[1:]) -> int:
         set_logger(log_file=None, log_level=logging.INFO)
 
     # conf = get_local_config()
+    new_parts = []
 
     if arguments["lcsc_list"]:
         ids = arguments["lcsc_list"]
         logging.info(f"Procesing lcsc ids: {ids}")
         for i, lcsc_id in enumerate(ids):
             arguments["lcsc_id"] = lcsc_id
-            single_run(arguments)
+            if single_run(arguments) == 0:  # If part was successfully added.
+                new_parts.append(lcsc_id)
             logging.info(
                 "_____________\n"
                 f"       Progress {((i+1)/len(ids))*100:.0f}%\n"
@@ -278,7 +293,37 @@ def main(argv: List[str] = sys.argv[1:]) -> int:
             )
 
     else:
-        single_run(arguments)
+        if single_run(arguments) == 0:  # If part was successfully added.
+            new_parts.append(lcsc_id)
+
+    logging.info(f"Successfully added {new_parts}.")
+
+    if arguments["parts_list"]:
+        logging.info("Updating parts list")
+        parts_list_file = f"parts_list.txt"
+        update_parts_list(new_parts, parts_list_file)
+
+
+def update_parts_list(new_parts, parts_list_file):
+
+    logging.info(f"Parts list file {parts_list_file}")
+    old_parts = ""
+
+    try:
+        with open(parts_list_file) as f:
+            old_parts = f.read().rstrip().split(" ")
+    except FileNotFoundError(e):
+        pass
+    logging.info(f"Old parts: {old_parts}")
+
+    parts = new_parts + old_parts
+    parts = list(set(parts))  # Remove duplicit entries
+    parts.sort()
+    parts_string = " ".join(parts)
+    logging.info(f"Saving parts: {parts_string}")
+
+    with open(parts_list_file, "w") as f:
+        f.write(parts_string)
 
 
 def single_run(arguments):
